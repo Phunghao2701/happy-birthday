@@ -5,8 +5,9 @@ export function CakeScene({active,burst,sfx,onNext}) {
   const [out,setOut]=useState([false,false,false]),[micMessage,setMicMessage]=useState(""),done=out.every(Boolean);
   const outRef=useRef(out),micRef=useRef({stream:null,context:null,frame:0});
   const releaseMic=()=>{const mic=micRef.current;cancelAnimationFrame(mic.frame);mic.stream?.getTracks().forEach(track=>track.stop());if(mic.context&&mic.context.state!=="closed")mic.context.close().catch(()=>{});micRef.current={stream:null,context:null,frame:0};};
-  const blow=(i)=>{if(outRef.current[i])return;const next=outRef.current.map((v,j)=>v||i===j);outRef.current=next;setOut(next);sfx("pop");burst(innerWidth/2+(i-1)*24,innerHeight*.58,16);if(next.every(Boolean)){if(micRef.current.stream)releaseMic();setMicMessage("Phù! Điều ước đang bay đi ✨");sfx("wish");burst(innerWidth/2,innerHeight*.48,120,"firework");}};
+  const blow=(i)=>{if(outRef.current[i])return;const next=outRef.current.map((v,j)=>v||i===j);outRef.current=next;setOut(next);sfx("candle_puff");gsap.delayedCall(.11,()=>sfx("candle_out"));burst(innerWidth/2+(i-1)*24,innerHeight*.58,16);if(next.every(Boolean)){if(micRef.current.stream)releaseMic();setMicMessage("Phù! Điều ước đang bay đi ✨");sfx("duck");sfx("wish_magic");burst(innerWidth/2,innerHeight*.48,120,"firework");}};
   const blowAll=()=>{if(done)return;[0,1,2].forEach(i=>gsap.delayedCall(i*.2,()=>blow(i)));};
+  useEffect(()=>{if(!active)return undefined;const cues=[0,1,2].map((_,i)=>gsap.delayedCall(.2+i*.17,()=>sfx("candle_light")));return()=>cues.forEach(cue=>cue.kill());},[active,sfx]);
   useEffect(()=>{
     if(!active||done)return undefined;
     let cancelled=false,stream=null,context=null,session=null;

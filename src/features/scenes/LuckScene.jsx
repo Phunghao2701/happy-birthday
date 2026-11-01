@@ -4,11 +4,11 @@ import { Button } from "../../shared/ui/Button.jsx";
 const pool=[["🌈","🎂","💗","💎","🍒","🌟","🦋","🍀","🎈","💖","🍭","🎉","💗"],["🍒","🎉","🦋","🍀","💎","🌟","🎂","🍭","💗","🎈","🌈","✨","🍀"],["🎈","💗","🌈","🦋","🎂","✨","🍀","🌟","🍒","💎","🍭","🎉","✨"]];
 export function LuckScene({burstAt,sfx,onNext}) {
   const [busy,setBusy]=useState(false),[won,setWon]=useState(false),strips=useRef([]),lever=useRef(null),machine=useRef(null);
-  const spin=()=>{if(busy||won)return;setBusy(true);sfx("pop");const tl=gsap.timeline({onComplete:()=>{setBusy(false);setWon(true);sfx("win");burstAt(machine.current,140);}});
+  const spin=()=>{if(busy||won)return;setBusy(true);sfx("lever_clack");sfx("reel_start");sfx("duck");const tl=gsap.timeline({onComplete:()=>{setBusy(false);setWon(true);sfx("jackpot_stinger");burstAt(machine.current,140);}});
     tl.to(lever.current,{rotation:32,duration:.2}).to(lever.current,{rotation:0,duration:.45,ease:"elastic.out(1,.3)"}).to(machine.current,{x:5,duration:.08,repeat:7,yoyo:true},.1);
-    strips.current.forEach((strip,i)=>tl.fromTo(strip,{y:0},{y:-840,duration:1.7+i*.25,ease:"power4.out"},.12));
-  };
-  return <div className="absolute inset-0 overflow-hidden text-[#201c28]"><div className="diagonal-pattern absolute inset-0 opacity-35" /><span className="absolute left-[16%] top-[65%] text-5xl text-[#f45e91]" data-float>✿</span><span className="absolute bottom-[20%] right-[17%] text-5xl text-[#ffca45]" data-float>★</span>
+    strips.current.forEach((strip,i)=>{const duration=1.7+i*.25;tl.fromTo(strip,{y:0},{y:-840,duration,ease:"power4.out"},.12);tl.call(()=>sfx(["reel_stop_1","reel_stop_2","reel_stop_3"][i]),null,.12+duration);});
+    [.42,.72,1.02,1.32,1.62].forEach(at=>tl.call(()=>sfx("reel_tick"),null,at));
+  };  return <div className="absolute inset-0 overflow-hidden text-[#201c28]"><div className="diagonal-pattern absolute inset-0 opacity-35" /><span className="absolute left-[16%] top-[65%] text-5xl text-[#f45e91]" data-float>✿</span><span className="absolute bottom-[20%] right-[17%] text-5xl text-[#ffca45]" data-float>★</span>
     <div className="absolute inset-x-3 bottom-[clamp(9.2rem,17vh,11rem)] top-[75px] luck-layout flex flex-col items-center justify-center px-2 text-center">
       <p className="relative -top-4 mb-2 text-[9px] font-black tracking-[.18em] sm:text-[11px]" data-reveal>CHƯƠNG 02 ✦ QUÀ TẶNG NGẪU NHIÊN</p><h2 className="luck-heading font-display text-[clamp(2rem,5.5vw,5rem)] font-bold leading-[.86] tracking-[-.06em]" data-reveal>BẠN XỨNG ĐÁNG<br /><em className="not-italic text-[#ef5b90]">TRỌN BỘ</em> MAY MẮN.</h2><p className="section-lede mt-2 text-[10px] sm:text-sm" data-reveal>Hãy thử cỗ máy bí mật. Spoiler: giải thưởng nào cũng thuộc về bạn!</p>
       <div className="relative mt-3 flex h-[clamp(170px,28vh,250px)] w-[min(570px,94vw)] items-center justify-center" data-reveal><div className="slot-machine relative z-10 w-[min(500px,86%)] rounded-[25px] border-4 border-[#201c28] bg-[#fb6a95] p-3 shadow-[7px_9px_0_#201c28] sm:p-4" id="slot-machine" data-gsap-hover ref={machine}>
