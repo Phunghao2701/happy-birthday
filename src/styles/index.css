@@ -1,0 +1,39 @@
+@import "tailwindcss";
+@theme { --color-ink:#201c28; --color-parade-pink:#fa6294; --color-parade-yellow:#ffdf55; --font-sans:"Be Vietnam Pro",sans-serif; --font-display:"Fredoka","Be Vietnam Pro",sans-serif; }
+@layer base {
+  :root { font-family:var(--font-sans); font-synthesis:none; text-rendering:optimizeLegibility; }
+  html,body,#root { width:100%; height:100%; min-height:100%; margin:0; overflow:hidden; }
+  body { position:relative; background:#faecce; overscroll-behavior:none; -webkit-tap-highlight-color:transparent; }
+  *,*::before,*::after { box-sizing:border-box; user-select:none; }
+  input,textarea { user-select:text; }
+  button { cursor:pointer; }
+}
+.outline-text { color:transparent; -webkit-text-stroke:2px #201c28; paint-order:stroke fill; }
+.marquee-track { display:flex; width:max-content; animation:marquee 25s linear infinite; will-change:transform; }
+.marquee-track > div { flex:0 0 auto; }
+[aria-hidden="true"] .marquee-track { animation-play-state:paused; }
+.scene-wipe { transform:translate(-50%,-50%) scale(0); }
+.ticket-rays { transform:translate(-50%,-50%); background:repeating-conic-gradient(from 0deg,#fff 0 9deg,transparent 9deg 19deg); animation:ticket-spin 110s linear infinite; }
+@keyframes ticket-spin { from { transform:translate(-50%,-50%) rotate(0deg); } to { transform:translate(-50%,-50%) rotate(360deg); } }
+[aria-hidden="true"] .ticket-rays { animation-play-state:paused; }
+.diagonal-pattern { background:repeating-linear-gradient(135deg,transparent 0 22px,rgba(27,87,79,.28) 22px 24px); }
+.party-rays { background:repeating-conic-gradient(rgba(255,255,255,.055) 0 9deg,transparent 9deg 22deg); animation:spin 140s linear infinite; }
+[aria-hidden="true"] .party-rays { animation-play-state:paused; }
+.finale-grid { background-image:linear-gradient(rgba(32,26,43,.3) 2px,transparent 2px),linear-gradient(90deg,rgba(32,26,43,.3) 2px,transparent 2px); background-size:42px 42px; transform:perspective(220px) rotateX(46deg) scale(1.7); transform-origin:bottom; }
+.letter-pattern { background-image:radial-gradient(#f28593 1.5px,transparent 1.5px); background-size:30px 30px; opacity:.15; }
+.reel-window { position:relative; overflow:hidden; }
+.reel-window::after { position:absolute; inset:0; pointer-events:none; content:""; background:linear-gradient(180deg,rgba(33,21,57,.12),transparent 25%,transparent 70%,rgba(33,21,57,.1)); }
+.candle-flame { transform:translateX(-50%); animation:flicker .65s ease-in-out alternate infinite; }
+.candle:nth-child(2) .candle-flame { animation-delay:.2s; }
+.candle:nth-child(3) .candle-flame { animation-delay:.4s; }
+.candle-lilac { background:repeating-linear-gradient(145deg,#c5acfa 0 8px,#fff1c6 8px 14px); }
+.candle-mint { background:repeating-linear-gradient(145deg,#70e1cd 0 8px,#fff1c6 8px 14px); }
+.envelope-flap { clip-path:polygon(0 0,100% 0,50% 58%); transform-origin:50% 0%; backface-visibility:hidden; }
+.envelope-front { clip-path:polygon(0 13%,50% 67%,100% 13%,100% 100%,0 100%); }
+.balloon-body { display:grid; place-items:center; width:90px; height:125px; border:4px solid #201c28; border-radius:54% 50% 47% 47%; color:#201c28; font:700 48px var(--font-display); }
+.balloon-string { height:65px; width:3px; margin:auto; background:#201c28; transform:rotate(6deg); }
+@keyframes marquee { to { transform:translateX(-50%); } }
+@keyframes spin { to { transform:translate(-50%,-50%) rotate(360deg); } }
+@keyframes flicker { from { filter:brightness(.95); } to { filter:brightness(1.2); } }
+@media(max-width:640px) { .outline-text { -webkit-text-stroke-width:1.5px; } }
+@media(prefers-reduced-motion:reduce) { *,*::before,*::after { animation-duration:.01ms!important; animation-iteration-count:1!important; transition-duration:.01ms!important; scroll-behavior:auto!important; } }
