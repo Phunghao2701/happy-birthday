@@ -10,6 +10,7 @@ const CUES = {
   ui_audio_on:{tones:[659,1047],step:.085,volume:.62,duration:.2},
   ui_audio_off:{tones:[784,523],step:.075,volume:.5,duration:.16},
   intro_shimmer:{tones:[784,988,1174,1568],step:.105,volume:.42,duration:.36},
+  intro_letter_pop:{tones:[659,784,988],step:.09,volume:.5,duration:.13},
   intro_spring:{tones:[330,523,784],step:.12,volume:.58,duration:.28,noise:{low:240,high:2200,duration:.25,volume:.18}},
   ui_primary:{tones:[740,1047],step:.065,volume:.55,duration:.13},
   ui_secondary:{tones:[587,784],step:.055,volume:.32,duration:.1},
