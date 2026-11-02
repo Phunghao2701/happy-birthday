@@ -1,4 +1,5 @@
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
+import { gsap } from "gsap";
 
 const RELEASE_AT = new Date("2026-11-03T00:00:00+07:00").getTime();
 const UNITS = [
@@ -61,19 +62,49 @@ function CountdownScreen({ now }) {
 
 export function ReleaseGate({ children }) {
   const [now, setNow] = useState(() => Date.now());
+  const [phase, setPhase] = useState(() => Date.now() >= RELEASE_AT ? "open" : "locked");
+  const countdownRef = useRef(null);
+  const wipeRef = useRef(null);
 
   useEffect(() => {
+    if (phase !== "locked") return undefined;
+
     let timeoutId;
     const updateTime = () => {
       const currentTime = Date.now();
       setNow(currentTime);
       const remaining = RELEASE_AT - currentTime;
-      if (remaining > 0) timeoutId = window.setTimeout(updateTime, Math.min(1000, remaining));
+      if (remaining <= 0) {
+        setPhase("transitioning");
+        return;
+      }
+      timeoutId = window.setTimeout(updateTime, Math.min(1000, remaining));
     };
 
     updateTime();
     return () => window.clearTimeout(timeoutId);
-  }, []);
+  }, [phase]);
 
-  return now >= RELEASE_AT ? children : <CountdownScreen now={now} />;
+  useEffect(() => {
+    if (phase !== "transitioning") return undefined;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) {
+      setPhase("open");
+      return undefined;
+    }
+
+    const timeline = gsap.timeline({ onComplete: () => setPhase("open") });
+    timeline
+      .to(countdownRef.current, { scale: 0.94, y: -24, autoAlpha: 0, filter: "blur(8px)", duration: 0.48, ease: "power3.in" })
+      .to(wipeRef.current, { clipPath: "circle(150% at 50% 50%)", duration: 0.82, ease: "power4.inOut" }, 0)
+      .to(wipeRef.current, { autoAlpha: 0, duration: 0.28, ease: "power1.out" }, 0.62);
+    return () => timeline.kill();
+  }, [phase]);
+
+  return (
+    <div className="fixed inset-0 isolate overflow-hidden bg-[#faecce]">
+      {phase !== "locked" && <div className="absolute inset-0 z-0">{children}</div>}
+      {phase !== "open" && <div ref={countdownRef} className="absolute inset-0 z-40"><CountdownScreen now={now} /></div>}
+      {phase === "transitioning" && <div ref={wipeRef} aria-hidden="true" className="pointer-events-none absolute inset-0 z-50 bg-[#fa6294]" style={{ clipPath: "circle(0% at 50% 50%)" }} />}
+    </div>
+  );
 }
