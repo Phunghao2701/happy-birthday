@@ -41,7 +41,7 @@ function canFitAnywhere(board, cells) {
 
 function PiecePreview({ cells }) {
   return (
-    <div className="grid size-12 grid-cols-4 grid-rows-4 gap-[3px]" aria-hidden="true">
+    <div data-piece-preview className="grid size-12 grid-cols-4 grid-rows-4 gap-[3px]" aria-hidden="true">
       {Array.from({ length: 16 }, (_, index) => {
         const row = Math.floor(index / 4);
         const column = index % 4;
@@ -66,7 +66,7 @@ export function BlockBlastGame() {
   const [selected, setSelected] = useState(null);
   const [hover, setHover] = useState(null);
   const [score, setScore] = useState(0);
-  const [message, setMessage] = useState("Nhấn giữ một khối rồi kéo vào bàn chơi nhé!");
+  const [message, setMessage] = useState("Nhấn giữ khối bất kỳ rồi kéo vào bàn nhé!");
   const [gameOver, setGameOver] = useState(false);
   const [draggingIndex, setDraggingIndex] = useState(null);
   const dragRef = useRef(null);
@@ -79,7 +79,7 @@ export function BlockBlastGame() {
     if (gameOver) return;
     const piece = pieceIndex === null ? null : pieces[pieceIndex];
     if (!piece) {
-      setMessage("Nhấn giữ một khối rồi kéo vào bàn chơi nhé!");
+      setMessage("Nhấn giữ khối bất kỳ rồi kéo vào bàn nhé!");
       return;
     }
     if (!canPlaceAt(board, piece.cells, row, column)) {
@@ -107,7 +107,7 @@ export function BlockBlastGame() {
     setHover(null);
     setScore((current) => current + points);
     setGameOver(isGameOver);
-    setMessage(isGameOver ? "Hết chỗ rồi! Chơi lại một ván nữa nhé." : clearedLines ? `Tuyệt vời! Xóa ${clearedLines} hàng/cột · +${points} điểm!` : `+${points} điểm! Kéo khối tiếp theo vào bàn nhé.`);
+    setMessage(isGameOver ? "Hết chỗ rồi! Chơi lại một ván nữa nhé." : clearedLines ? `Tuyệt vời! Xóa ${clearedLines} hàng/cột · +${points} điểm!` : `+${points} điểm! Tuyệt! Chọn khối nào cũng được, kéo vào bàn nhé!`);
   };
 
   const placeAtRef = useRef(placeAt);
@@ -183,14 +183,24 @@ export function BlockBlastGame() {
 
   const startDrag = (event, index, piece) => {
     if (!piece || gameOver) return;
-    const blockCell = event.target.closest?.("[data-piece-cell='true']");
-    if (!blockCell) return;
+    const touchedCell = event.target.closest?.("[data-piece-cell='true']");
+    const preview = event.currentTarget.querySelector("[data-piece-preview]");
+    const bounds = preview?.getBoundingClientRect();
+    const pointRow = bounds ? Math.max(0, Math.min(3, ((event.clientY - bounds.top) / bounds.height) * 4)) : 1.5;
+    const pointColumn = bounds ? Math.max(0, Math.min(3, ((event.clientX - bounds.left) / bounds.width) * 4)) : 1.5;
+    const anchorCell = touchedCell
+      ? [Number(touchedCell.dataset.pieceRow), Number(touchedCell.dataset.pieceColumn)]
+      : piece.cells.reduce((closest, cell) => {
+          const distance = (cell[0] - pointRow) ** 2 + (cell[1] - pointColumn) ** 2;
+          const closestDistance = (closest[0] - pointRow) ** 2 + (closest[1] - pointColumn) ** 2;
+          return distance < closestDistance ? cell : closest;
+        }, piece.cells[0]);
 
     dragRef.current = {
       pointerId: event.pointerId,
       index,
-      anchorRow: Number(blockCell.dataset.pieceRow),
-      anchorColumn: Number(blockCell.dataset.pieceColumn),
+      anchorRow: anchorCell[0],
+      anchorColumn: anchorCell[1],
       startX: event.clientX,
       startY: event.clientY,
       moved: false,
@@ -211,7 +221,7 @@ export function BlockBlastGame() {
     dragRef.current = null;
     setHover(null);
     setScore(0);
-    setMessage("Nhấn giữ một khối rồi kéo vào bàn chơi nhé!");
+    setMessage("Nhấn giữ khối bất kỳ rồi kéo vào bàn nhé!");
     setGameOver(false);
   };
 
@@ -241,7 +251,7 @@ export function BlockBlastGame() {
                 }}
                 onClick={() => {
                   if (consumeSuppressedClick()) return;
-                  setMessage("Nhấn giữ một khối rồi kéo vào bàn chơi nhé!");
+                  setMessage("Nhấn giữ khối bất kỳ rồi kéo vào bàn nhé!");
                 }}
                 className={`aspect-square min-w-0 touch-none rounded-[4px] border transition-colors duration-100 ${tone}`}
               />
@@ -270,7 +280,7 @@ export function BlockBlastGame() {
             onPointerDown={(event) => startDrag(event, index, piece)}
             onClick={() => {
               if (consumeSuppressedClick() || !piece) return;
-              setMessage("Nhấn giữ khối rồi kéo vào bàn chơi nhé!");
+              setMessage("Nhấn giữ khối bất kỳ rồi kéo vào bàn nhé!");
             }}
             className={`grid min-h-[72px] touch-none select-none place-items-center rounded-xl border-2 border-[#201c28] px-2 py-2 shadow-[3px_4px_0_#201a2b] transition-transform disabled:opacity-45 ${draggingIndex === index ? "opacity-40" : selected === index ? "-translate-y-1 bg-[#fa6294]" : "bg-white"}`}
           >
