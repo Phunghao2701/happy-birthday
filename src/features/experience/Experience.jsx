@@ -109,7 +109,7 @@ function SceneFrame({ index, active, children }) {
 }
 export function Experience() {
   const [scene,setScene]=useState(0),[seen,setSeen]=useState(0),[journey,setJourney]=useState(0),[busy,setBusy]=useState(false);
-  const [personal,setPersonal]=useState(()=>{const q=new URLSearchParams(location.search);return{to:clean(q.get("to"),32)||defaults.to,from:clean(q.get("from"),50)||defaults.from,message:clean(q.get("wish"),350)||defaults.message};});
+  const [personal,setPersonal]=useState(()=>{const q=new URLSearchParams(location.search);return{to:clean(q.get("to"),32)||defaults.to,from:clean(q.get("from"),50)||defaults.from,message:clean(q.get("wish"),1000)||defaults.message};});
   const [modal,setModal]=useState(false),[toast,setToast]=useState(""),[sound,setSound]=useState(()=>soundManager.enabled);
   const toastTimer=useRef(0),wipe=useRef(null);
   const fx=useRef({ctx:null,w:0,h:0,dpr:1,list:[],raf:0,draw:null});
@@ -166,7 +166,7 @@ export function Experience() {
         setSeen((previous) => force ? target : Math.max(previous, target));
       }, null, .75)
       .to(wipeNode, { scale: 0, duration: .65, ease: "power4.inOut" }, .76);
-  }, [busy, scene, seen, notify, sfx, reduced]);  const save=(event)=>{event.preventDefault();const f=new FormData(event.currentTarget),next={to:clean(f.get("to"),32)||defaults.to,from:clean(f.get("from"),50)||defaults.from,message:clean(f.get("wish"),350)||defaults.message};setPersonal(next);const u=new URL(location.href);u.search="";if(next.to!==defaults.to)u.searchParams.set("to",next.to);if(next.from!==defaults.from)u.searchParams.set("from",next.from);if(next.message!==defaults.message)u.searchParams.set("wish",next.message);history.replaceState(null,"",u);setModal(false);notify("Đã cập nhật lời chúc dành riêng cho bạn ♥");sfx("ui_success");};
+  }, [busy, scene, seen, notify, sfx, reduced]);  const save=(event)=>{event.preventDefault();const f=new FormData(event.currentTarget),next={to:clean(f.get("to"),32)||defaults.to,from:clean(f.get("from"),50)||defaults.from,message:clean(f.get("wish"),1000)||defaults.message};setPersonal(next);const u=new URL(location.href);u.search="";if(next.to!==defaults.to)u.searchParams.set("to",next.to);if(next.from!==defaults.from)u.searchParams.set("from",next.from);if(next.message!==defaults.message)u.searchParams.set("wish",next.message);history.replaceState(null,"",u);setModal(false);notify("Đã cập nhật lời chúc dành riêng cho bạn ♥");sfx("ui_success");};
   const share=async()=>{const u=new URL(location.href);u.search="";if(personal.to!==defaults.to)u.searchParams.set("to",personal.to);if(personal.from!==defaults.from)u.searchParams.set("from",personal.from);if(personal.message!==defaults.message)u.searchParams.set("wish",personal.message);try{if(navigator.clipboard&&isSecureContext)await navigator.clipboard.writeText(u.toString());else{const el=document.createElement("textarea");el.value=u.toString();el.style.position="fixed";el.style.left="-9999px";document.body.appendChild(el);el.select();document.execCommand("copy");el.remove();}sfx("ui_copy");notify("Đã sao chép link! Gửi ngay cho người đặc biệt ♥");}catch{sfx("ui_locked");notify("Hãy sao chép đường dẫn trên thanh địa chỉ.");}};  const replay=()=>{if(busy)return;sfx("replay_reverse");setJourney(v=>v+1);setSeen(0);go(0,true);};
   const jump=i=>{if(i<=seen)go(i);else{sfx("ui_locked");notify("Mỗi bất ngờ sẽ được mở lần lượt nhé! ✳");}};
 
