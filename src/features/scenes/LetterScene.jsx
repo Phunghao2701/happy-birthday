@@ -1,5 +1,6 @@
 import { useEffect,useRef,useState } from "react";
 import { Dialog } from "@base-ui/react/dialog";
+import { gsap } from "gsap";
 import { Button } from "../../shared/ui/Button.jsx";
 export function LetterScene({personal,sfx,onNext}) {
   const [opened,setOpened]=useState(false),[expanded,setExpanded]=useState(false),flap=useRef(null),paper=useRef(null),heart=useRef(null),stage=useRef(null),backdrop=useRef(null),expandedLetter=useRef(null),front=useRef(null);
