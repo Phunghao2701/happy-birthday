@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 const GRID_SIZE = 8;
 const SHAPES = [
@@ -46,7 +46,15 @@ function PiecePreview({ cells }) {
         const row = Math.floor(index / 4);
         const column = index % 4;
         const filled = cells.some(([dy, dx]) => dy === row && dx === column);
-        return <span key={index} className={filled ? "rounded-[3px] border border-[#201c28] bg-[#fa6294] shadow-[1px_2px_0_#201a2b]" : "rounded-[3px]"} />;
+        return (
+          <span
+            key={index}
+            data-piece-cell={filled ? "true" : undefined}
+            data-piece-row={filled ? row : undefined}
+            data-piece-column={filled ? column : undefined}
+            className={filled ? "rounded-[3px] border border-[#201c28] bg-[#fa6294] shadow-[1px_2px_0_#201a2b]" : "rounded-[3px]"}
+          />
+        );
       })}
     </div>
   );
@@ -58,34 +66,38 @@ export function BlockBlastGame() {
   const [selected, setSelected] = useState(null);
   const [hover, setHover] = useState(null);
   const [score, setScore] = useState(0);
-  const [message, setMessage] = useState("Chọn một khối, rồi chạm vào ô muốn đặt.");
+  const [message, setMessage] = useState("Nhấn giữ một khối rồi kéo vào bàn chơi nhé!");
   const [gameOver, setGameOver] = useState(false);
+  const [draggingIndex, setDraggingIndex] = useState(null);
+  const dragRef = useRef(null);
+  const suppressClickRef = useRef(false);
 
   const selectedPiece = selected === null ? null : pieces[selected];
   const previewValid = Boolean(hover && selectedPiece && canPlaceAt(board, selectedPiece.cells, hover[0], hover[1]));
 
-  const placeAt = (row, column) => {
+  const placeAt = (row, column, pieceIndex) => {
     if (gameOver) return;
-    if (!selectedPiece) {
-      setMessage("Chọn một khối trước nhé!");
+    const piece = pieceIndex === null ? null : pieces[pieceIndex];
+    if (!piece) {
+      setMessage("Nhấn giữ một khối rồi kéo vào bàn chơi nhé!");
       return;
     }
-    if (!canPlaceAt(board, selectedPiece.cells, row, column)) {
+    if (!canPlaceAt(board, piece.cells, row, column)) {
       setMessage("Khối chưa vừa chỗ này. Thử vị trí khác nhé!");
       return;
     }
 
     const placed = board.map((line) => [...line]);
-    selectedPiece.cells.forEach(([dy, dx]) => { placed[row + dy][column + dx] = true; });
+    piece.cells.forEach(([dy, dx]) => { placed[row + dy][column + dx] = true; });
     const fullRows = placed.map((line, index) => line.every(Boolean) ? index : -1).filter((index) => index >= 0);
     const fullColumns = Array.from({ length: GRID_SIZE }, (_, index) => index).filter((col) => placed.every((line) => line[col]));
     const rowSet = new Set(fullRows);
     const columnSet = new Set(fullColumns);
     const clearedBoard = placed.map((line, rowIndex) => line.map((cell, columnIndex) => rowSet.has(rowIndex) || columnSet.has(columnIndex) ? false : cell));
     const clearedLines = fullRows.length + fullColumns.length;
-    const points = selectedPiece.cells.length + clearedLines * 10;
+    const points = piece.cells.length + clearedLines * 10;
 
-    let nextPieces = pieces.map((piece, index) => index === selected ? null : piece);
+    let nextPieces = pieces.map((piece, index) => index === pieceIndex ? null : piece);
     if (nextPieces.every((piece) => piece === null)) nextPieces = createRack();
     const isGameOver = !nextPieces.some((piece) => piece && canFitAnywhere(clearedBoard, piece.cells));
 
@@ -95,16 +107,111 @@ export function BlockBlastGame() {
     setHover(null);
     setScore((current) => current + points);
     setGameOver(isGameOver);
-    setMessage(isGameOver ? "Hết chỗ rồi! Chơi lại một ván nữa nhé." : clearedLines ? `Tuyệt vời! Xóa ${clearedLines} hàng/cột · +${points} điểm!` : `+${points} điểm! Chọn khối tiếp theo nhé.`);
+    setMessage(isGameOver ? "Hết chỗ rồi! Chơi lại một ván nữa nhé." : clearedLines ? `Tuyệt vời! Xóa ${clearedLines} hàng/cột · +${points} điểm!` : `+${points} điểm! Kéo khối tiếp theo vào bàn nhé.`);
+  };
+
+  const placeAtRef = useRef(placeAt);
+  placeAtRef.current = placeAt;
+
+  useEffect(() => {
+    const getOriginAtPoint = (event, drag) => {
+      const cell = document.elementFromPoint(event.clientX, event.clientY)?.closest("[data-grid-cell]");
+      if (!cell) {
+        setHover(null);
+        return null;
+      }
+
+      const row = Number(cell.dataset.row) - drag.anchorRow;
+      const column = Number(cell.dataset.column) - drag.anchorColumn;
+      const origin = [row, column];
+      setHover(origin);
+      return origin;
+    };
+
+    const handlePointerMove = (event) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+
+      if (!drag.moved) {
+        const distance = Math.hypot(event.clientX - drag.startX, event.clientY - drag.startY);
+        if (distance < 6) return;
+        drag.moved = true;
+        setDraggingIndex(drag.index);
+        setSelected(drag.index);
+      }
+
+      getOriginAtPoint(event, drag);
+    };
+
+    const handlePointerUp = (event) => {
+      const drag = dragRef.current;
+      if (!drag || drag.pointerId !== event.pointerId) return;
+      dragRef.current = null;
+
+      if (!drag.moved) return;
+
+      suppressClickRef.current = true;
+      window.setTimeout(() => { suppressClickRef.current = false; }, 0);
+      setDraggingIndex(null);
+
+      const origin = getOriginAtPoint(event, drag);
+      if (origin) {
+        placeAtRef.current(origin[0], origin[1], drag.index);
+      } else {
+        setSelected(null);
+        setHover(null);
+        setMessage("Kéo khối vào bàn chơi rồi thả nhé!");
+      }
+    };
+
+    const handlePointerCancel = (event) => {
+      if (dragRef.current?.pointerId !== event.pointerId) return;
+      dragRef.current = null;
+      setDraggingIndex(null);
+      setHover(null);
+    };
+
+    window.addEventListener("pointermove", handlePointerMove);
+    window.addEventListener("pointerup", handlePointerUp);
+    window.addEventListener("pointercancel", handlePointerCancel);
+    return () => {
+      window.removeEventListener("pointermove", handlePointerMove);
+      window.removeEventListener("pointerup", handlePointerUp);
+      window.removeEventListener("pointercancel", handlePointerCancel);
+    };
+  }, []);
+
+  const startDrag = (event, index, piece) => {
+    if (!piece || gameOver) return;
+    const blockCell = event.target.closest?.("[data-piece-cell='true']");
+    if (!blockCell) return;
+
+    dragRef.current = {
+      pointerId: event.pointerId,
+      index,
+      anchorRow: Number(blockCell.dataset.pieceRow),
+      anchorColumn: Number(blockCell.dataset.pieceColumn),
+      startX: event.clientX,
+      startY: event.clientY,
+      moved: false,
+    };
+  };
+
+  const consumeSuppressedClick = () => {
+    if (!suppressClickRef.current) return false;
+    suppressClickRef.current = false;
+    return true;
   };
 
   const restart = () => {
     setBoard(createBoard());
     setPieces(createRack());
     setSelected(null);
+    setDraggingIndex(null);
+    dragRef.current = null;
     setHover(null);
     setScore(0);
-    setMessage("Chọn một khối, rồi chạm vào ô muốn đặt.");
+    setMessage("Nhấn giữ một khối rồi kéo vào bàn chơi nhé!");
     setGameOver(false);
   };
 
@@ -123,11 +230,20 @@ export function BlockBlastGame() {
             return (
               <button
                 key={`${row}-${column}`}
+                data-grid-cell
+                data-row={row}
+                data-column={column}
                 type="button"
                 aria-label={`Hàng ${row + 1}, cột ${column + 1}${occupied ? ", đã có khối" : ""}`}
-                onPointerEnter={() => setHover([row, column])}
-                onClick={() => placeAt(row, column)}
-                className={`aspect-square min-w-0 rounded-[4px] border transition-colors duration-100 ${tone}`}
+                onPointerEnter={() => {
+                  const drag = dragRef.current;
+                  setHover(drag?.moved ? [row - drag.anchorRow, column - drag.anchorColumn] : [row, column]);
+                }}
+                onClick={() => {
+                  if (consumeSuppressedClick()) return;
+                  setMessage("Nhấn giữ một khối rồi kéo vào bàn chơi nhé!");
+                }}
+                className={`aspect-square min-w-0 touch-none rounded-[4px] border transition-colors duration-100 ${tone}`}
               />
             );
           }))}
@@ -148,16 +264,15 @@ export function BlockBlastGame() {
           <button
             key={piece?.id ?? `empty-${index}`}
             type="button"
-            aria-label={piece ? `Chọn khối ${index + 1}` : "Khối đã đặt"}
-            aria-pressed={selected === index}
+            aria-label={piece ? `Nhấn giữ rồi kéo khối ${index + 1}` : "Khối đã đặt"}
+            aria-pressed={draggingIndex === index}
             disabled={!piece || gameOver}
+            onPointerDown={(event) => startDrag(event, index, piece)}
             onClick={() => {
-              if (!piece) return;
-              setSelected(selected === index ? null : index);
-              setHover(null);
-              setMessage(selected === index ? "Chọn một khối, rồi chạm vào ô muốn đặt." : "Chạm vào ô muốn đặt khối nhé!");
+              if (consumeSuppressedClick() || !piece) return;
+              setMessage("Nhấn giữ khối rồi kéo vào bàn chơi nhé!");
             }}
-            className={`grid min-h-[72px] place-items-center rounded-xl border-2 border-[#201c28] px-2 py-2 shadow-[3px_4px_0_#201a2b] transition-transform disabled:opacity-45 ${selected === index ? "-translate-y-1 bg-[#fa6294]" : "bg-white"}`}
+            className={`grid min-h-[72px] touch-none select-none place-items-center rounded-xl border-2 border-[#201c28] px-2 py-2 shadow-[3px_4px_0_#201a2b] transition-transform disabled:opacity-45 ${draggingIndex === index ? "opacity-40" : selected === index ? "-translate-y-1 bg-[#fa6294]" : "bg-white"}`}
           >
             {piece ? <PiecePreview cells={piece.cells} /> : <span className="font-display text-xl font-bold text-[#8a7d8f]">✓</span>}
           </button>
